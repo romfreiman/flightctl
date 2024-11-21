@@ -135,12 +135,9 @@ type ListParams struct {
 	Labels                      map[string]string
 	LabelMatchExpressions       v1alpha1.MatchExpressions
 	AnnotationsMatchExpressions v1alpha1.MatchExpressions
-	Filter                      map[string][]string
 	InvertLabels                *bool
-	Owners                      []string
 	Limit                       int
 	Continue                    *Continue
-	FleetName                   *string
 	FieldSelector               k8sselector.Selector
 	SortBy                      *SortField
 }

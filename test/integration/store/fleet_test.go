@@ -11,6 +11,7 @@ import (
 	"github.com/flightctl/flightctl/internal/store"
 	"github.com/flightctl/flightctl/internal/store/model"
 	"github.com/flightctl/flightctl/internal/util"
+	"github.com/flightctl/flightctl/pkg/k8s/selector/fields"
 	flightlog "github.com/flightctl/flightctl/pkg/log"
 	testutil "github.com/flightctl/flightctl/test/util"
 	"github.com/google/uuid"
@@ -654,8 +655,8 @@ var _ = Describe("FleetStore create", func() {
 		It("List with owner param", func() {
 			owner := "owner"
 			listParams := store.ListParams{
-				Limit:  100,
-				Owners: []string{owner},
+				Limit:         100,
+				FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.owner=%s", owner)),
 			}
 
 			callback := store.FleetStoreAllDeletedCallback(func(orgId uuid.UUID) {})

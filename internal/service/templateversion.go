@@ -12,7 +12,6 @@ import (
 	"github.com/flightctl/flightctl/internal/store"
 	"github.com/flightctl/flightctl/internal/store/selector"
 	"github.com/flightctl/flightctl/internal/tasks"
-	k8sselector "github.com/flightctl/flightctl/pkg/k8s/selector"
 	"github.com/flightctl/flightctl/pkg/k8s/selector/fields"
 	"github.com/go-openapi/swag"
 	"k8s.io/apimachinery/pkg/labels"
@@ -44,11 +43,14 @@ func (h *ServiceHandler) ListTemplateVersions(ctx context.Context, request serve
 		return server.ListTemplateVersions400JSONResponse{Message: fmt.Sprintf("failed to parse continue parameter: %v", err)}, nil
 	}
 
-	var fieldSelector k8sselector.Selector
+	fieldSelectorInput := fmt.Sprintf("metadata.owner = %s", request.Fleet)
 	if request.Params.FieldSelector != nil {
-		if fieldSelector, err = fields.ParseSelector(*request.Params.FieldSelector); err != nil {
-			return server.ListTemplateVersions400JSONResponse{Message: fmt.Sprintf("failed to parse field selector: %v", err)}, nil
-		}
+		fieldSelectorInput = fmt.Sprintf("%s, %s", fieldSelectorInput, *request.Params.FieldSelector)
+	}
+
+	fieldSelector, err := fields.ParseSelector(fieldSelectorInput)
+	if err != nil {
+		return server.ListTemplateVersions400JSONResponse{Message: fmt.Sprintf("failed to parse field selector: %v", err)}, nil
 	}
 
 	var sortField *store.SortField
@@ -63,7 +65,6 @@ func (h *ServiceHandler) ListTemplateVersions(ctx context.Context, request serve
 		Labels:        labelMap,
 		Limit:         int(swag.Int32Value(request.Params.Limit)),
 		Continue:      cont,
-		FleetName:     &request.Fleet,
 		FieldSelector: fieldSelector,
 		SortBy:        sortField,
 	}
@@ -93,7 +94,8 @@ func (h *ServiceHandler) ListTemplateVersions(ctx context.Context, request serve
 func (h *ServiceHandler) DeleteTemplateVersions(ctx context.Context, request server.DeleteTemplateVersionsRequestObject) (server.DeleteTemplateVersionsResponseObject, error) {
 	orgId := store.NullOrgId
 	// Iterate through the relevant templateVersions, 100 at a time, and delete each one's config storage
-	listParams := store.ListParams{Limit: 100, FleetName: &request.Fleet}
+	fieldSelector, _ := fields.ParseSelector(fmt.Sprintf("metadata.owner = %s", request.Fleet))
+	listParams := store.ListParams{Limit: 100, FieldSelector: fieldSelector}
 	for {
 		result, err := h.store.TemplateVersion().List(ctx, orgId, listParams)
 		if err != nil {

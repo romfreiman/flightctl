@@ -93,7 +93,6 @@ func (h *ServiceHandler) ListFleets(ctx context.Context, request server.ListFlee
 		Labels:        labelMap,
 		Limit:         int(swag.Int32Value(request.Params.Limit)),
 		Continue:      cont,
-		Owners:        util.OwnerQueryParamsToArray(request.Params.Owner),
 		FieldSelector: fieldSelector,
 		SortBy:        sortField,
 	}

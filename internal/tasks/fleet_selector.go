@@ -11,6 +11,7 @@ import (
 	"github.com/flightctl/flightctl/internal/store"
 	"github.com/flightctl/flightctl/internal/store/model"
 	"github.com/flightctl/flightctl/internal/util"
+	"github.com/flightctl/flightctl/pkg/k8s/selector/fields"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 )
@@ -234,7 +235,8 @@ func (f FleetSelectorMatchingLogic) handleOwningFleetChanged(ctx context.Context
 func (f FleetSelectorMatchingLogic) removeOwnerFromDevicesOwnedByFleet(ctx context.Context) error {
 	// Remove the owner from devices that have this owner
 	listParams := store.ListParams{
-		Owners: []string{*util.SetResourceOwner(model.FleetKind, f.resourceRef.Name)},
+		FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.owner=%s",
+			*util.SetResourceOwner(model.FleetKind, f.resourceRef.Name))),
 	}
 	return f.removeOwnerFromMatchingDevices(ctx, listParams)
 }
@@ -244,8 +246,9 @@ func (f FleetSelectorMatchingLogic) removeOwnerFromOrphanedDevices(ctx context.C
 	listParams := store.ListParams{
 		Labels:       getMatchLabelsSafe(fleet),
 		InvertLabels: util.BoolToPtr(true),
-		Owners:       []string{*util.SetResourceOwner(model.FleetKind, *fleet.Metadata.Name)},
-		Limit:        ItemsPerPage,
+		FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.owner=%s",
+			*util.SetResourceOwner(model.FleetKind, *fleet.Metadata.Name))),
+		Limit: ItemsPerPage,
 	}
 	return f.removeOwnerFromMatchingDevices(ctx, listParams)
 }

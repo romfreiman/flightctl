@@ -11,6 +11,7 @@ import (
 	"github.com/flightctl/flightctl/internal/store"
 	"github.com/flightctl/flightctl/internal/store/model"
 	"github.com/flightctl/flightctl/internal/util"
+	"github.com/flightctl/flightctl/pkg/k8s/selector/fields"
 	flightlog "github.com/flightctl/flightctl/pkg/log"
 	testutil "github.com/flightctl/flightctl/test/util"
 	"github.com/google/uuid"
@@ -112,8 +113,8 @@ var _ = Describe("ResourceSyncStore create", func() {
 			rsName := "myresourcesync-1"
 			fleetowner := util.SetResourceOwner(model.ResourceSyncKind, rsName)
 			listParams := store.ListParams{
-				Limit:  100,
-				Owners: []string{*fleetowner},
+				Limit:         100,
+				FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.owner=%s", *fleetowner)),
 			}
 			testutil.CreateTestFleet(ctx, storeInst.Fleet(), orgId, "myfleet", nil, fleetowner)
 			callbackCalled := false

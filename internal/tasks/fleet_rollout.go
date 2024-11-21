@@ -12,6 +12,7 @@ import (
 	"github.com/flightctl/flightctl/internal/store"
 	"github.com/flightctl/flightctl/internal/store/model"
 	"github.com/flightctl/flightctl/internal/util"
+	"github.com/flightctl/flightctl/pkg/k8s/selector/fields"
 	"github.com/sirupsen/logrus"
 )
 
@@ -78,7 +79,7 @@ func (f FleetRolloutsLogic) RolloutFleet(ctx context.Context) error {
 	owner := util.SetResourceOwner(model.FleetKind, f.resourceRef.Name)
 	f.owner = *owner
 
-	listParams := store.ListParams{Owners: []string{*owner}, Limit: ItemsPerPage}
+	listParams := store.ListParams{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.owner=%s", *owner)), Limit: ItemsPerPage}
 
 	for {
 		devices, err := f.devStore.List(ctx, f.resourceRef.OrgID, listParams)

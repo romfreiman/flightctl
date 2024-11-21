@@ -12,6 +12,7 @@ import (
 	"github.com/flightctl/flightctl/internal/flterrors"
 	"github.com/flightctl/flightctl/internal/store/model"
 	"github.com/flightctl/flightctl/internal/util"
+	"github.com/flightctl/flightctl/pkg/k8s/selector/fields"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 	"github.com/samber/lo"
@@ -211,7 +212,8 @@ func (s *FleetStore) Get(ctx context.Context, orgId uuid.UUID, name string, opts
 	}
 	if options.withSummary {
 		deviceQuery, err := ListQuery(&model.Device{}).Build(ctx, s.db, orgId,
-			ListParams{Owners: []string{*util.SetResourceOwner(model.FleetKind, name)}})
+			ListParams{FieldSelector: fields.ParseSelectorOrDie(
+				fmt.Sprintf("metadata.owner=%s", *util.SetResourceOwner(model.FleetKind, name)))})
 		if err != nil {
 			return nil, err
 		}

@@ -12,6 +12,7 @@ import (
 	"github.com/flightctl/flightctl/internal/store"
 	"github.com/flightctl/flightctl/internal/store/model"
 	"github.com/flightctl/flightctl/internal/util"
+	"github.com/flightctl/flightctl/pkg/k8s/selector/fields"
 	flightlog "github.com/flightctl/flightctl/pkg/log"
 	testutil "github.com/flightctl/flightctl/test/util"
 	"github.com/google/uuid"
@@ -288,10 +289,8 @@ var _ = Describe("DeviceStore create", func() {
 
 		It("List with status field filter paging", func() {
 			listParams := store.ListParams{
-				Filter: map[string][]string{
-					"status.updated.status": {"Unknown", "Updating"},
-				},
-				Limit: 1000,
+				FieldSelector: fields.ParseSelectorOrDie("status.updated.status in (Unknown, Updating)"),
+				Limit:         1000,
 			}
 			devices, err := devStore.List(ctx, orgId, listParams)
 			Expect(err).ToNot(HaveOccurred())
@@ -302,24 +301,24 @@ var _ = Describe("DeviceStore create", func() {
 			testutil.CreateTestDevice(ctx, devStore, orgId, "fleet-a-device", util.StrToPtr("Fleet/fleet-a"), nil, nil)
 			testutil.CreateTestDevice(ctx, devStore, orgId, "fleet-b-device", util.StrToPtr("Fleet/fleet-b"), nil, nil)
 			listParams := store.ListParams{
-				Owners: []string{"Fleet/fleet-a"},
-				Limit:  1000,
+				FieldSelector: fields.ParseSelectorOrDie("metadata.owner=Fleet/fleet-a"),
+				Limit:         1000,
 			}
 			devices, err := devStore.List(ctx, orgId, listParams)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(len(devices.Items)).To(Equal(1))
 
 			listParams = store.ListParams{
-				Owners: []string{"Fleet/fleet-b"},
-				Limit:  1000,
+				FieldSelector: fields.ParseSelectorOrDie("metadata.owner=Fleet/fleet-b"),
+				Limit:         1000,
 			}
 			devices, err = devStore.List(ctx, orgId, listParams)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(len(devices.Items)).To(Equal(1))
 
 			listParams = store.ListParams{
-				Owners: []string{"Fleet/fleet-a", "Fleet/fleet-b"},
-				Limit:  1000,
+				FieldSelector: fields.ParseSelectorOrDie("metadata.owner in (Fleet/fleet-a, Fleet/fleet-b)"),
+				Limit:         1000,
 			}
 			devices, err = devStore.List(ctx, orgId, listParams)
 			Expect(err).ToNot(HaveOccurred())
