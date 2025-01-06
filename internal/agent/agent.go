@@ -18,6 +18,7 @@ import (
 	"github.com/flightctl/flightctl/internal/agent/device/fileio"
 	"github.com/flightctl/flightctl/internal/agent/device/hook"
 	"github.com/flightctl/flightctl/internal/agent/device/os"
+	"github.com/flightctl/flightctl/internal/agent/device/policy"
 	"github.com/flightctl/flightctl/internal/agent/device/resource"
 	"github.com/flightctl/flightctl/internal/agent/device/spec"
 	"github.com/flightctl/flightctl/internal/agent/device/status"
@@ -118,10 +119,13 @@ func (a *Agent) Run(ctx context.Context) error {
 	// create shutdown manager
 	shutdownManager := shutdown.New(a.log, gracefulShutdownTimeout, cancel)
 
+	policyManager := policy.NewManager(a.log)
+
 	// create spec manager
 	specManager := spec.NewManager(
 		deviceName,
 		a.config.DataDir,
+		policyManager,
 		deviceReadWriter,
 		bootcClient,
 		backoff,
@@ -191,7 +195,7 @@ func (a *Agent) Run(ctx context.Context) error {
 	}
 
 	// create the gRPC client this must be done after bootstrap
-	grpcClient, err := newGrpcClient(a.config)
+	grpcClient, err := newGrpcClient(&a.config.ManagementService)
 	if err != nil {
 		a.log.Warnf("Failed to create gRPC client: %v", err)
 	}
@@ -229,6 +233,7 @@ func (a *Agent) Run(ctx context.Context) error {
 		a.config.StatusUpdateInterval,
 		hookManager,
 		osManager,
+		policyManager,
 		applicationsController,
 		configController,
 		resourceController,
@@ -256,11 +261,8 @@ func newEnrollmentClient(cfg *Config) (client.Enrollment, error) {
 	return client.NewEnrollment(httpClient), nil
 }
 
-func newGrpcClient(cfg *Config) (grpc_v1.RouterServiceClient, error) {
-	if cfg.GrpcManagementEndpoint == "" {
-		return nil, fmt.Errorf("no gRPC endpoint, disabling console functionality")
-	}
-	client, err := client.NewGRPCClientFromConfig(&cfg.ManagementService.Config, cfg.GrpcManagementEndpoint)
+func newGrpcClient(cfg *ManagementService) (grpc_v1.RouterServiceClient, error) {
+	client, err := client.NewGRPCClientFromConfig(&cfg.Config)
 	if err != nil {
 		return nil, fmt.Errorf("creating gRPC client: %w", err)
 	}
